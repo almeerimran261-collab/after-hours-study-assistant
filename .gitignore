@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+chroma_db*/
+demo_chroma_db/
+data/
+demo_data/
+phase8_backups/
+*.zip
+*.log
