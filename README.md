@@ -1,4 +1,5 @@
 # After Hours · Course Notes Assistant
+[**Open the live demo →**](https://after-hours-study-assistant-nyqpmod7g2yhs6lyqegbkm.streamlit.app/)
 
 A study assistant that answers questions from PDFs and lecture slides, with
 page or slide citations and an animated space-themed Streamlit interface.
