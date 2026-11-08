@@ -21,7 +21,7 @@ uses your own documents and Ollama. Retrieval runs on CPU in both modes.
 Use Python 3.11. In a Windows terminal:
 
 ```powershell
-git clone https://github.com/almeeran261-collab/after-hours-study-assistant.git
+git clone https://github.com/almeerimran261-collab/after-hours-study-assistant.git
 cd after-hours-study-assistant
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
