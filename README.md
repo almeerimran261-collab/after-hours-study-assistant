@@ -1,4 +1,5 @@
 # After Hours · Course Notes Assistant
+[![Core tests](https://github.com/almeerimran261-collab/after-hours-study-assistant/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/almeerimran261-collab/after-hours-study-assistant/actions/workflows/tests.yml)
 [**Open the live demo →**](https://after-hours-study-assistant-nyqpmod7g2yhs6lyqegbkm.streamlit.app/)
 [![Core tests](https://github.com/almeerimran261-collab/after-hours-study-assistant/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/almeerimran261-collab/after-hours-study-assistant/actions/workflows/tests.yml)
 
