@@ -1,0 +1,43 @@
+{
+  "dataset": "original_public_development_v1",
+  "dataset_sha256": "b47262d32ced21cd039518a5385384bc14d6a3463a10c117648e7df361800559",
+  "questions": 40,
+  "passages": 40,
+  "pdfs": 8,
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+  "embedding_revision": null,
+  "reranker_revision": null,
+  "python": "3.11.9",
+  "system": "Windows",
+  "versions": {
+    "sentence-transformers": "6.1.0",
+    "transformers": "5.19.0",
+    "torch": "2.14.1+cpu",
+    "chromadb": "1.5.9",
+    "PyMuPDF": "1.28.2"
+  },
+  "retrieval_settings": {
+    "top_k": 5,
+    "candidate_k": 20,
+    "rrf_k": 60
+  },
+  "scope": "Retrieval only on a fixed synthetic development set; no answer, citation, or refusal accuracy scores.",
+  "timing": "CPU; model loading/index construction and one warm-up per pipeline excluded; vector then hybrid for each query.",
+  "summary": {
+    "vector_only": {
+      "hit_at_1": 0.9,
+      "hit_at_5": 1,
+      "mrr_at_5": 0.94375,
+      "mean_latency_ms": 44.390025,
+      "p95_latency_ms": 62.308
+    },
+    "hybrid_reranked": {
+      "hit_at_1": 0.925,
+      "hit_at_5": 1,
+      "mrr_at_5": 0.95625,
+      "mean_latency_ms": 602.552425,
+      "p95_latency_ms": 759.671
+    }
+  }
+}

@@ -130,3 +130,41 @@ Historical course-corpus evaluation outputs are excluded from this public export
 
 The local prototype and public demo use existing embedding and language models;
 this project does not train a foundation model.
+
+## Public retrieval benchmark
+
+A fixed synthetic development set of **40 text-only PDF pages across 8 documents**
+and **40 answerable questions**, with one labeled source page per question.
+This uses a separate dataset from the hosted demo.
+
+| Pipeline | Hit@1 | Hit@5 | MRR@5 | Mean retrieval ms | p95 ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Vector only | 90.0% | 100.0% | 0.944 | 44.4 | 62.3 |
+| Hybrid + reranking | 92.5% | 100.0% | 0.956 | 602.6 | 759.7 |
+
+The hybrid pipeline placed the labeled page first for **37/40 questions**, versus
+**36/40** for vector search. Both retrieved it within five results for **40/40**.
+The extra first-place hit came with about **13.6x higher mean retrieval latency**
+on this run. This compares the complete pipelines, including BM25, fusion,
+and reranking.
+
+Measured on Windows with Python 3.11.9 and CPU inference. Model loading, index
+construction, and one warm-up per pipeline are excluded from retrieval timings.
+
+Hit@k measures recovery of the exact labeled page. MRR@5 rewards higher placement
+and assigns zero to misses. Generated-answer quality and performance on unseen
+courses require separate evaluation.
+
+[Report](eval/benchmark_results/3274f1d7/REPORT.md) ·
+[JSON summary](eval/benchmark_results/3274f1d7/summary.json) ·
+[Per-question CSV](eval/benchmark_results/3274f1d7/questions.csv) ·
+[Original source notes](eval/benchmark_results/3274f1d7/notes/)
+
+To rerun, install `requirements.txt` and run from the repository root:
+
+```text
+python -m eval.public_retrieval_benchmark
+```
+
+The script uses a fresh in-memory index and makes no Groq or Ollama calls.
+Each run writes a new results directory.
