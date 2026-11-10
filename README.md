@@ -168,3 +168,5 @@ python -m eval.public_retrieval_benchmark
 
 The script uses a fresh in-memory index and makes no Groq or Ollama calls.
 Each run writes a new results directory.
+
+![After Hours answering a question with a source citation](assets/demo.png)
