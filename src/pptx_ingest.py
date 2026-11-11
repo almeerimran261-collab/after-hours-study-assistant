@@ -15,7 +15,7 @@ TESSERACT_DIR = Path(
 TESSERACT_EXE = TESSERACT_DIR / "tesseract.exe"
 
 
-def _extract_shape_content(shape, slide_number: int) -> tuple[list[str], int]:
+def _extract_shape_content(shape, slide_number: int, *, ocr_enabled=True, on_warning=None) -> tuple[list[str], int]:
     """Extract text/table content and OCR embedded pictures in a slide shape."""
     extracted: list[str] = []
     ocr_images = 0
@@ -37,6 +37,11 @@ def _extract_shape_content(shape, slide_number: int) -> tuple[list[str], int]:
 
     # OCR picture shapes. This does not alter or save the original image.
     if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+        if not ocr_enabled:
+            (on_warning or print)(
+                f"Slide {slide_number}: image OCR skipped because Tesseract is unavailable."
+            )
+            return extracted, 0
         ocr_images = 1
         try:
             image = Image.open(BytesIO(shape.image.blob)).convert("RGB")
@@ -51,7 +56,7 @@ def _extract_shape_content(shape, slide_number: int) -> tuple[list[str], int]:
                     f"{recognized_text}"
                 )
         except Exception as exc:
-            print(
+            (on_warning or print)(
                 f"  Warning: OCR failed for an image on slide "
                 f"{slide_number}: {exc}"
             )
@@ -59,7 +64,7 @@ def _extract_shape_content(shape, slide_number: int) -> tuple[list[str], int]:
     return extracted, ocr_images
 
 
-def load_pptx_slides(pptx_path: str | Path) -> list[Document]:
+def load_pptx_slides(pptx_path: str | Path, *, on_warning=None) -> list[Document]:
     """Extract native text, table rows, and OCR text from a .pptx file."""
     path = Path(pptx_path)
 
@@ -72,13 +77,10 @@ def load_pptx_slides(pptx_path: str | Path) -> list[Document]:
             "Older .ppt files are not supported."
         )
 
-    if not TESSERACT_EXE.exists():
-        raise FileNotFoundError(
-            f"Tesseract was not found at {TESSERACT_EXE}. "
-            "Set the TESSERACT_DIR environment variable to its folder."
-        )
-
-    pytesseract.pytesseract.tesseract_cmd = str(TESSERACT_EXE)
+    # Native text and tables work without an OCR installation.
+    ocr_enabled = TESSERACT_EXE.is_file()
+    if ocr_enabled:
+        pytesseract.pytesseract.tesseract_cmd = str(TESSERACT_EXE)
 
     presentation = Presentation(str(path))
     documents: list[Document] = []
@@ -92,7 +94,9 @@ def load_pptx_slides(pptx_path: str | Path) -> list[Document]:
         slide_ocr_image_count = 0
 
         for shape in slide.shapes:
-            parts, image_count = _extract_shape_content(shape, slide_number)
+            parts, image_count = _extract_shape_content(
+                shape, slide_number, ocr_enabled=ocr_enabled, on_warning=on_warning,
+            )
             slide_parts.extend(parts)
             slide_ocr_image_count += image_count
 
@@ -103,7 +107,7 @@ def load_pptx_slides(pptx_path: str | Path) -> list[Document]:
         slide_text = "\n".join(slide_parts).strip()
 
         if not slide_text:
-            print(
+            (on_warning or print)(
                 f"  Warning: slide {slide_number} has no extractable text; skipped."
             )
             continue

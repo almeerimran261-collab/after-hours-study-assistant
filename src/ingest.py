@@ -26,7 +26,7 @@ MIN_TABLE_ROWS = 3
 MIN_MULTI_CELL_ROW_RATIO = 0.80
 
 
-def _extract_page_text(page, source_name: str, page_number: int) -> tuple[str, str]:
+def _extract_page_text(page, source_name: str, page_number: int, on_warning=None) -> tuple[str, str]:
     """Use normal PDF text when available; fall back to OCR on sparse pages."""
     text = page.get_text("text").strip()
 
@@ -35,7 +35,7 @@ def _extract_page_text(page, source_name: str, page_number: int) -> tuple[str, s
 
     tesseract_exe = TESSERACT_DIR / "tesseract.exe"
     if not tesseract_exe.exists() or not TESSDATA_DIR.exists():
-        print(
+        (on_warning or print)(
             f"  Warning: page {page_number} in {source_name} has little selectable "
             "text, but Tesseract was not found. Keeping any available text."
         )
@@ -62,11 +62,11 @@ def _extract_page_text(page, source_name: str, page_number: int) -> tuple[str, s
             print(f"  OCR used on page {page_number} in {source_name}")
             return ocr_text, "ocr"
 
-        print(f"  Warning: OCR found no text on page {page_number} in {source_name}")
+        (on_warning or print)(f"OCR found no text on page {page_number} in {source_name}")
         return text, "native"
 
     except Exception as exc:
-        print(
+        (on_warning or print)(
             f"  Warning: OCR failed on page {page_number} in {source_name}: {exc}"
         )
         return text, "native"
@@ -156,9 +156,9 @@ def _format_table_rows(rows: list[list[str]]) -> str:
     return "\n".join(lines)
 
 
-def load_pdf_pages(data_dir: Path = DATA_DIR) -> list[Document]:
+def load_pdf_pages(data_dir: Path = DATA_DIR, *, on_warning=None) -> list[Document]:
     """Read PDF pages, OCR sparse pages, and add reliable tables with page metadata."""
-    pdf_paths = sorted(data_dir.glob("*.pdf"))
+    pdf_paths = sorted(path for path in data_dir.iterdir() if path.suffix.casefold() == ".pdf")
     if not pdf_paths:
         raise FileNotFoundError(
             f"No PDF files found in {data_dir}. Copy at least one searchable PDF there."
@@ -179,6 +179,7 @@ def load_pdf_pages(data_dir: Path = DATA_DIR) -> list[Document]:
                     page,
                     source_name=pdf_path.name,
                     page_number=page_number,
+                    on_warning=on_warning,
                 )
 
                 if text:
@@ -198,7 +199,7 @@ def load_pdf_pages(data_dir: Path = DATA_DIR) -> list[Document]:
                     if extraction_method == "ocr":
                         ocr_page_count += 1
                 else:
-                    print(
+                    (on_warning or print)(
                         f"  Warning: page {page_number} has no extractable text "
                         "and will be skipped."
                     )
@@ -212,7 +213,7 @@ def load_pdf_pages(data_dir: Path = DATA_DIR) -> list[Document]:
                     table_page = layout_pdf.pages[page_number - 1].dedupe_chars()
                     raw_tables = table_page.extract_tables() or []
                 except Exception as exc:
-                    print(
+                    (on_warning or print)(
                         f"  Warning: table extraction failed on page {page_number} "
                         f"of {pdf_path.name}: {exc}"
                     )

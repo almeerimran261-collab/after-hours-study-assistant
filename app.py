@@ -142,6 +142,8 @@ def embedding_model():
 
 
 def friendly(name):
+    if workspace is not None and workspace.collection is not None and name == workspace.collection.name:
+        return "Uploaded documents · this session"
     if DEMO_MODE and name == COLLECTION_NAME:
         return "Public study notes"
     if name == COLLECTION_NAME:
@@ -294,6 +296,13 @@ if DEMO_MODE:
         st.error(f"Could not prepare the public sample: {exc}")
         st.stop()
 
+workspace = None
+collection_controls = st.sidebar.container()
+if not DEMO_MODE:
+    from src.local_upload_ui import render_local_uploads
+    workspace = render_local_uploads(embedding_model)
+
+names = []
 try:
     names = sorted(
         item if isinstance(item, str) else item.name
@@ -301,21 +310,32 @@ try:
     )
     if DEMO_MODE:
         names = [COLLECTION_NAME]
-    if not names:
-        st.info("Create a document collection before starting a chat.")
+except FileNotFoundError as exc:
+    if DEMO_MODE:
+        st.error(f"Could not open the document database: {exc}")
         st.stop()
 except Exception as exc:
-    st.error(f"Could not open the document database: {exc}")
+    st.warning(f"Could not open saved collections: {exc}")
+    if DEMO_MODE:
+        st.stop()
+
+if workspace is not None and workspace.collection is not None:
+    names.append(workspace.collection.name)
+if not names:
+    mount_cosmos()
+    st.title("Bring your notes into orbit.")
+    st.write("Open **Upload documents** in the sidebar, choose PDFs or lecture slides, "
+             "then click **Index selected files** to start studying.")
+    st.caption("Your files are processed locally. Keep this browser session open while studying.")
     st.stop()
 
-selected = st.sidebar.selectbox(
+# A cleared upload index must never leave a stale selectbox value behind.
+if st.session_state.get("collection_choice") not in names:
+    st.session_state.collection_choice = COLLECTION_NAME if COLLECTION_NAME in names else names[0]
+
+selected = collection_controls.selectbox(
     "Your collection",
     names,
-    index=(
-        names.index(COLLECTION_NAME)
-        if COLLECTION_NAME in names
-        else 0
-    ),
     format_func=friendly,
     key="collection_choice",
 )
@@ -323,19 +343,24 @@ selected = st.sidebar.selectbox(
 if st.session_state.get("active_collection") != selected:
     reset_chat(selected)
 
-if st.sidebar.button(
+if collection_controls.button(
     "New conversation",
     key="new_chat",
     use_container_width=True,
 ):
     reset_chat(selected)
 
-st.sidebar.caption(
+collection_controls.caption(
     "Switching collections starts a fresh conversation."
 )
 
 try:
-    collection = open_collection(selected)
+    collection = (
+        workspace.collection
+        if workspace is not None and workspace.collection is not None
+        and selected == workspace.collection.name
+        else open_collection(selected)
+    )
     if collection.count() == 0:
         st.warning("This collection is empty. Choose another collection.")
         st.stop()

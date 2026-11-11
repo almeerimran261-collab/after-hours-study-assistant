@@ -15,6 +15,7 @@ uses your own documents and Ollama. Retrieval runs on CPU in both modes.
 - Relevance-based refusal and validation of citation source/location membership.
 - Session question memory for basic conditional follow-ups.
 - Separate document collections, inspectable source passages, and chat export.
+- Local PDF/PPTX uploads with indexing progress, session isolation, and document removal.
 - A public sample database isolated from the local course database.
 - Groq requests restricted to exact excerpts from the built-in public sample.
 
@@ -47,21 +48,37 @@ weather question should be refused. Open the source passages to inspect evidence
 
 ## Use Ollama with your own documents
 
-The current ingestion workflow is configured for Windows. Install the additional
-local dependencies, put your own PDFs/PPTX files in `data/`, and run:
+Install the additional local dependencies and start the local app:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-local.txt
 ollama pull qwen3:4b-instruct
 $env:RAG_MODE = 'local'
-.\.venv\Scripts\python.exe -m src.phase1_cli ingest
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-Ollama must be running. For OCR/PPTX processing, install Tesseract and set
-`TESSERACT_DIR` to its installation directory before ingestion. The ingestion
-command rebuilds the selected local index. Back up an existing database before
-re-ingesting documents you want to retain.
+Ollama must be running. Open **Upload documents** in the sidebar, select PDF or
+PPTX files, and click **Index selected files**. Progress covers extraction and
+embedding batches. No prebuilt database is needed. Native PDF/PPTX text works
+without Tesseract; for scanned pages or slide pictures on Windows, install
+Tesseract and set `TESSERACT_DIR` to its folder. Extraction warnings appear in
+the upload panel; unsupported, unreadable, or entirely empty files fail the batch.
+
+Uploads use a separate in-memory index for each browser session. The latest
+successful batch replaces the previous uploaded batch; failed builds leave the
+previous batch active. Use **Remove selected documents** to rebuild with fewer
+files, or **Clear uploaded documents** to release the batch and its conversation.
+Changing the document set resets question memory. Uploads disappear when the
+session is released or the server restarts; keep the original files on your computer.
+Disconnect cleanup is best effort. Limits: 6 files, 20 MB each, 60 MB total,
+300 pages/slides, and 5,000 passages. OCR and embedding can take time on CPU.
+
+Existing saved collections remain selectable and are never changed by the upload
+controls. For the older persistent-index CLI, place files in `data/` and run
+`python -m src.phase1_cli ingest`. That separate command rebuilds its selected
+local index, so back it up before re-ingesting documents you want to retain.
+
+Uploads are local-only. The public Groq demo continues to use its built-in sample.
 
 ## How an answer is produced
 
@@ -121,6 +138,7 @@ Historical course-corpus evaluation outputs are excluded from this public export
 | `app.py` | Chat interface and collection selection |
 | `public_app.py` | Cloud entrypoint using the public sample |
 | `src/ingest.py`, `src/pptx_ingest.py` | PDF/PPTX extraction and OCR |
+| `src/local_workspace.py`, `src/local_upload_ui.py` | Local session uploads, progress, and safe replacement/removal |
 | `src/retriever.py` | Hybrid retrieval and reranking |
 | `src/generator.py` | Relevance checks and citation validation |
 | `src/model_provider.py` | Ollama/Groq requests |

@@ -12,3 +12,5 @@ demo_data/
 phase8_backups/
 *.zip
 *.log
+local_ui_backups/
+install_local_ui.py
