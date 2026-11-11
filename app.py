@@ -107,7 +107,10 @@ st.markdown("""
     border:1px solid #3a536d;border-radius:16px;
     box-shadow:0 8px 30px #0003;
 }
-[data-testid="stToolbar"] {visibility:hidden;}
+/* Keep the toolbar's sidebar reopen button available. */
+[data-testid="stToolbarActions"],
+[data-testid="stAppDeployButton"],
+[data-testid="stMainMenu"] {visibility:hidden;}
 .source-name {
     font-weight:650;color:#eef3fa;overflow-wrap:anywhere;
 }

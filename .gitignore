@@ -14,3 +14,6 @@ phase8_backups/
 *.log
 local_ui_backups/
 install_local_ui.py
+citation_fix_backups/
+fix_numeric_citations.py
+upgrade_citation_labels.py

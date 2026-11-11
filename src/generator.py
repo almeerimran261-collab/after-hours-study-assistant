@@ -1,6 +1,7 @@
 import re
 
 from src import config
+from src.citation_sequences import numeric_citation_mismatches, repair_unique_numeric_citation
 from src.model_provider import complete
 
 # CrossEncoder scores are raw relevance scores, not probabilities. The 0.0
@@ -69,6 +70,9 @@ def _clean_and_validate_answer_with_reason(
 
     if any(citation not in allowed_citations for citation in citations):
         return REFUSAL, "citation_not_in_retrieved_context"
+
+    if numeric_citation_mismatches(answer, retrieved_chunks, CITATION_PATTERN):
+        return REFUSAL, "citation_numeric_sequence_mismatch"
 
     def normalize_citation(match: re.Match) -> str:
         source = match.group(1).strip()
@@ -153,13 +157,11 @@ def generate_answer(
 
 
     user_prompt = f"PDF passages:\n{context}\n\nQuestion: {question}"
-    answer = complete(
-        [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        retrieved_chunks,
-    )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    answer = complete(messages, retrieved_chunks)
     if not answer:
         return finish(REFUSAL, "empty_model_response")
     # Never include hidden think-trace text in diagnostics or project logs.
@@ -167,4 +169,14 @@ def generate_answer(
     validated_answer, reason = _clean_and_validate_answer_with_reason(
         safe_model_response, retrieved_chunks
     )
+    if reason == "citation_numeric_sequence_mismatch":
+        corrected = repair_unique_numeric_citation(
+            safe_model_response, retrieved_chunks, CITATION_PATTERN,
+        )
+        if corrected is not None:
+            # The body is immutable; only a uniquely supported label can change.
+            # Revalidate it before display. No second generation request is made.
+            validated_answer, reason = _clean_and_validate_answer_with_reason(
+                corrected, retrieved_chunks,
+            )
     return finish(validated_answer, reason, safe_model_response)

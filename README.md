@@ -188,3 +188,7 @@ The script uses a fresh in-memory index and makes no Groq or Ollama calls.
 Each run writes a new results directory.
 
 ![After Hours answering a question with a source citation](assets/demo.png)
+
+## Numeric-list citation check
+
+Copied ordered numeric lists are checked against their cited retrieved passages. A detected mismatch gets one correction attempt, which is validated again and must preserve the original numeric lists. General semantic support remains outside this narrow guard. See [scope and verification](docs/citation-checks.md).
